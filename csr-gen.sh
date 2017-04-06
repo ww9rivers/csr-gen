@@ -9,6 +9,10 @@ usage() {
 
 	"/subjectAltName=DNS.1=<alt-name-1>,DNS.2=<alt-name-2>,DNS.3=<alt-name-3>..."
 
+DEPENDENCY
+
+	openssl		This script assumes that the openssl package is installed.
+
 EOF
 	exit 2
 }

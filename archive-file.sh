@@ -10,9 +10,10 @@ APPNAME=`basename "$0"`
 DEFAULT_OLD=240
 DEFAULT_ZIP=`which xz`
 
-WORK_DIR=$1
-ARCHIVE_DIR=$2
-PATTERN=$3
+WORK_DIR="$1"
+ARCHIVE_DIR="$2"		# To be passed to COMPRESS_SCRIPT
+ARCHIVE_TO="$2"			# For display
+PATTERN="$3"
 COMPRESS_AFTER_SO_MANY_MINUTES=${4:-$DEFAULT_OLD}
 PROGRAM=${5:-$DEFAULT_ZIP}
 COMPRESS_SCRIPT="`dirname $0`/compress_file.sh"
@@ -27,8 +28,8 @@ Usage:	$0 work-dir archive-dir pattern [minutes] [program]
     NOT check that for a fact, besides checking that the files have not been modified
     in the last "minutes".
 
-    Files found in the work-dir folder matching the pattern that have not been
-    modified in the last [minutes] are archived (compressed) into the dest-dir
+    Files found in or under the work-dir folder matching the pattern that have not
+    been modified in the last [minutes] are archived (compressed) into the dest-dir
     folder.
 
 Mandatory arguments:
@@ -39,6 +40,9 @@ Mandatory arguments:
 			A value of "." means the same folder as work-dir. This folder
 			must exist at the time this utility runs. Otherwise, the
 			work-dir will be used instead.
+
+			If this is ".", files under the "work_dir" will be archived
+			where the source is found.
 
 	pattern		A pattern for matching files.
 
@@ -77,19 +81,20 @@ if [ ! -x "$COMPRESS_SCRIPT" ]; then
     exit 2
 fi
 
-if [ "$ARCHIVE_DIR" = '.' ]; then
-    ARCHIVE_DIR="$WORK_DIR"
+if [ "$ARCHIVE_TO" = '.' ]; then
+    ARCHIVE_TO="$WORK_DIR"
 fi
 
-if [ ! -d "$ARCHIVE_DIR" ]; then
+if [ ! -d "$ARCHIVE_TO" ]; then
     echo "Folder '$ARCHIVE_DIR' does not exist. Archiving to '$WORK_DIR' instead."
+    ARCHIVE_TO="$WORK_DIR"
     ARCHIVE_DIR="$WORK_DIR"
 fi
 
 if [ "$ARCHIVE_FILE_DEBUG" != '' ]; then
     cat <<EOF
 Archiving '$WORK_DIR/$PATTERN' that are older than $COMPRESS_AFTER_SO_MANY_MINUTES minutes,"
-    ... to folder '$ARCHIVE_DIR',"
+    ... to folder '$ARCHIVE_TO',"
     ... using '$PROGRAM'"
 EOF
 fi

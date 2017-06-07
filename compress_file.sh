@@ -12,7 +12,8 @@ Arguments:
 
 	SOURCE		Source file path.
 
-	ARCHIVE_DIR	Archive file folder.
+	ARCHIVE_DIR	Archive file folder. A value of '.' means the same
+			folder as the SOURCE.
 
 	PROGRAM		Program to use to compress source to target.
 
@@ -60,6 +61,9 @@ bn2=`basename "$bn" $THEHOUR`
 if [ "$bn" != "$bn2" ]; then exit 0; fi
 
 FNAME=`basename "$SOURCE"`
+if [ "$ARCHIVE_DIR" = '.' ]; then
+    ARCHIVE_DIR=`dirname "$SOURCE"`
+fi
 TARGET="$ARCHIVE_DIR/$FNAME.$ZEXT"
 if test -s "$TARGET"; then exit 2; fi
 { "${PROGRAM}" -z9c "$SOURCE" > "$TARGET"; }\

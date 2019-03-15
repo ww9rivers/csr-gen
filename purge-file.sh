@@ -37,13 +37,13 @@ EOF
     exit 1
 }
 
+if [ $# -lt 2 ]; then
+    usage
+fi
+
 if [ ! -d "$WORK_DIR" ]; then
     echo "'$WORK_DIR' is not a folder. Exiting!" >2
     exit 3
-fi
-
-if [ $# -lt 2 ]; then
-    usage
 fi
 
 find "$WORK_DIR/" -type f -name "${PATTERN}" -mtime +"${DAYS_OLD}"\

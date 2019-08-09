@@ -18,6 +18,16 @@ COMPRESS_AFTER_SO_MANY_MINUTES=${4:-$DEFAULT_OLD}
 PROGRAM=${5:-$DEFAULT_ZIP}
 COMPRESS_SCRIPT="`dirname $0`/compress_file.sh"
 
+#	Set LOGGER accordingly, for Splunk or cron:
+if [ "$LOGGER" = "" ]; then
+    if [ "$SPLUNK_HOME" = "" ]; then
+	LOGGER="logger -p user.alert -t"
+    else
+	LOGGER="echo"
+    fi
+fi
+export LOGGER
+
 usage () {
     cat <<EOF
 
@@ -31,6 +41,10 @@ Usage:	$0 work-dir archive-dir pattern [minutes] [program]
     Files found in or under the work-dir folder matching the pattern that have not
     been modified in the last [minutes] are archived (compressed) into the dest-dir
     folder.
+
+    The script may also be run as a Splunk input script: It checks for the variable
+    SPLUNK_HOME and sets LOGGER to send outputs to stdout for Splunk to pick up as
+    input events.
 
 Mandatory arguments:
 
@@ -107,7 +121,7 @@ CUR_UMASK=`umask`
 umask 0137
 find "$WORK_DIR/" -name "${PATTERN}" -mmin +"${COMPRESS_AFTER_SO_MANY_MINUTES}"\
 	-exec /bin/sh -c "'${COMPRESS_SCRIPT}' '{}' '$ARCHIVE_DIR' '$PROGRAM' '$APPNAME'" \;\
-	|| logger -p user.alert -t "$APPNAME" "${HOST}: Error compressing '${WORK_DIR}/${PATTERN}' files."
+	|| ${LOGGER} "$APPNAME" "${HOST}: Error compressing '${WORK_DIR}/${PATTERN}' files."
 umask ${CUR_UMASK}
 
 ##	Email admin if old uncompressed file still exists:

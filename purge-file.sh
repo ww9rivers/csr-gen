@@ -12,6 +12,16 @@ WORK_DIR=$1
 PATTERN=$2
 DAYS_OLD=${3:-$DEFAULT_DAYS}
 
+#	Set LOGGER accordingly, for Splunk or cron:
+if [ "$LOGGER" = "" ]; then
+    if [ "$SPLUNK_HOME" = "" ]; then
+	LOGGER="logger -p user.alert -t"
+    else
+	LOGGER="echo"
+    fi
+fi
+export LOGGER
+
 usage () {
     cat <<EOF
 
@@ -48,6 +58,6 @@ fi
 
 find "$WORK_DIR/" -type f -name "${PATTERN}" -mtime +"${DAYS_OLD}"\
 	-delete\
-	-exec logger -p user.info -t "$APPNAME" "${HOST}: file '{}' purged after ${DAYS_OLD} days." \;\
-	|| logger -p user.alert -t "$APPNAME" "${HOST}: Error purging '${WORK_DIR}/${PATTERN}' files."
+	-exec ${LOGGER} "$APPNAME" "${HOST}: file '{}' purged after ${DAYS_OLD} days." \;\
+	|| ${LOGGER} "$APPNAME" "${HOST}: Error purging '${WORK_DIR}/${PATTERN}' files."
 exit 0

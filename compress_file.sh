@@ -48,6 +48,15 @@ if [ "$APPNAME" = "" ]; then
     APPNAME=`basename "$0"`
 fi
 
+#	Set LOGGER accordingly, for Splunk or cron:
+if [ "$LOGGER" = "" ]; then
+    if [ "$SPLUNK_HOME" = "" ]; then
+	LOGGER="logger -p user.alert -t"
+    else
+	LOGGER="echo"
+    fi
+fi
+
 #	Check if file is current:
 #		logfile-%F-%H	is the pattern for current hour;
 #		logfile-%F	is the pattern for current day.
@@ -68,7 +77,7 @@ TARGET="$ARCHIVE_DIR/$FNAME.$ZEXT"
 if test -s "$TARGET"; then exit 2; fi
 { "${PROGRAM}" -z9c "$SOURCE" > "$TARGET"; }\
 	&& touch "$TARGET" -r "$SOURCE"\
-	&& logger -p user.info -t "${APPNAME}" "Compressed '$SOURCE' to '$TARGET'"\
+	&& ${LOGGER} "${APPNAME}" "Compressed '$SOURCE' to '$TARGET'"\
 	&& /bin/rm "$SOURCE"\
 	&& exit 0
 exit 1

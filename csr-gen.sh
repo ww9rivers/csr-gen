@@ -3,11 +3,14 @@
 usage() {
 	cat <<EOF
 
+TLS Key & CSR Generator
+VERSION	2.0
+
 	Usage:	$0 "<hostname>" ["<alternative-names>"]
 
-	Alternative-names may be provided optionally (Defaults to none), in this format:
+	Alternative-names may be provided optionally (Defaults to none), in FQDN format:
 
-	"/subjectAltName=DNS.1=<alt-name-1>,DNS.2=<alt-name-2>,DNS.3=<alt-name-3>..."
+		<alt-name-1> <alt-name-2> <alt-name-3> ...
 
 	Where, <alt-name-1>, <alt-name-2>, <alt-name-3>, etc. are aliases (CNAMEs) of
 	the <hostname>.
@@ -29,12 +32,15 @@ if [ "$1" = "-h" -o "$1" = '--help' ]; then
 	usage
 fi
 
-#	Allow this script to be configured:
-CONF="$HOME/.etc/csr-gen.rc"
+#	Allow this script to be configured, either in ~/.config/ or ~/.etc/:
+CONFDIR="$HOME/.etc"
+if [ ! -d "$CONFDIR" ]; then CONFDIR="$HOME/.config"; fi
+CONF="$CONFDIR/csr-gen.rc"
 if [ -r "$CONF" ]; then . "$CONF"; fi
 if [ "$OU" = "" -o "$GROUPEMAIL" = "" ]; then
-    mkdir -p "$HOME/.etc"
-    echo '#
+    mkdir -p "$CONFDIR"
+    echo 'CSR_GEN_RC=configured
+#
 #	Organizational Unit, with these components:
 #
 #		C	Country name
@@ -54,6 +60,12 @@ fi
 if [ "$GROUPEMAIL" = "" ]; then
     GROUPEMAIL="emailAddress=HITS-Performance@umich.edu"
 fi
+
+#
+#	Options: Default values are shown below.
+#
+#KEYSIZE=4096
+#SHA256="-sha256"
 ' >>"$CONF" && cat <<EOF
 
 A configuration file "$CONF" has been created for you.
@@ -63,9 +75,22 @@ EOF
     exit 3
 fi
 
-# SUBJECTALTNAME="/subjectAltName=DNS.1=<alt-name-1>,DNS.2=<alt-name-2>,DNS.3=<alt-name-3>..."
-SUBJECTALTNAME=${2-""}
-KEYSIZE=${KEYSIZE:-2048}
+# subjectAltName is changed to take <alt-name-1> <alt-name-2> <alt-name-3> . . .
+# directly on the command line:
+ADDEXT=""
+SUBJECTALTNAME=""
+shift
+for ix in "$@"; do
+	if [ "$SUBJECTALTNAME" != "" ]; then SUBJECTALTNAME="$SUBJECTALTNAME, "; fi
+	SUBJECTALTNAME="${SUBJECTALTNAME}DNS:${ix}"
+done
+if [ "$SUBJECTALTNAME" != "" ]; then
+    ADDEXT="-addext"
+    SUBJECTALTNAME="subjectAltName = '$SUBJECTALTNAME'"
+fi
+
+KEYSIZE=${KEYSIZE:-4096}
+if [ "$SHA256"="" ]; then SHA256="-sha256"; fi
 KEYFILE="${HOSTNAME}.key"
 CSRFILE="${HOSTNAME}.csr"
 
@@ -75,7 +100,7 @@ cat <<EOF
 Generating TLS key and certification request for:
 
   HOSTNAME = ${HOSTNAME}
-  AltNames = ${SUBJECTALTNAME}
+  AltNames =${SUBJECTALTNAME}
   Key size = ${KEYSIZE}
 
      Email = ${GROUPEMAIL}
@@ -86,8 +111,10 @@ COMMONNAME = ${COMMONNAME}
 EOF
 
 openssl genrsa -out "$KEYFILE" "$KEYSIZE"
-if openssl req -new -nodes -key "$KEYFILE" -out "$CSRFILE" -subj "${COMMONNAME}/${GROUPEMAIL}${SUBJECTALTNAME}"; then
-cat <<EOM
+if openssl req -new "$SHA256" -nodes -key "$KEYFILE" -out "$CSRFILE" \
+	   -subj "${COMMONNAME}/${GROUPEMAIL}" $ADDEXT "${SUBJECTALTNAME}"
+then
+	cat <<EOM
 
 ------	CSR created successfully. Submit the request here for InCommon certification:
 

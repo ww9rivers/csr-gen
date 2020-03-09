@@ -6,7 +6,8 @@ if [ $# -lt 3 ]; then
 
 Usage:	$0 SOURCE ARCHIVE_DIR PROGRAM [APPNAME]
 
-    This script is intended for 
+    This script is intended for archive-file.sh to call to compress
+    individual files.
 
 Arguments:
 

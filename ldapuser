@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+#	A shell script for user searching.
+#
+ldapsearch -H ${LDAP:=ldaps://ldap2.med.umich.edu:636} \
+	-b ${UBASE:=ou=people,dc=med,dc=umich,dc=edu} \
+	-s ${SCOPE:=sub} -x "(${UID:=uid}=$1)"

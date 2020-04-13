@@ -97,7 +97,8 @@ get_opts() {
 		if [ "$HOSTNAME" = "" ]; then
 		    HOSTNAME="$xvar"
 		    CSRCONF="${xvar}.conf"
-		elif [ "$args" = "" ]; then
+		fi
+		if [ "$args" = "" ]; then
 		    args="$xvar"
 		else
 		    args="${args} ${xvar}"
@@ -197,7 +198,6 @@ subjectAltName = @alt_names
 
 [alt_names]
 EOF
-    shift
     local ix=0
     for xvar in $args; do
 	echo DNS.${ix} = ${xvar} >>"${csr_cf}"

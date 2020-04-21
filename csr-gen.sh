@@ -3,19 +3,13 @@
 ##	Defaults:	----------------------------------------------------------
 KEYSIZE=${KEYSIZE:-4096}
 DIGEST=${DIGEST:-"sha256"}
-C=${C:-US}
-ST=${ST:-Michigan}
-L=${L:-Ann Arbor}
-O=${O:-Michigan Medicine}
-OU=${OU:-HITS}
-GROUPEMAIL=${GROUPEMAIL:-"HITS-Performance@umich.edu"}
 CONFVER=version002
 
 ##	Variables & parameters:
 HOSTNAME=''
 CSRCONF=''
-opt_old_conf=''
-opt_old_key=''
+opt_new_conf=''
+opt_new_key=''
 args=''
 
 ##--------------------------------------------------------------------------------
@@ -48,8 +42,8 @@ VERSION	2.0
 OPTIONS
 
 	-h --help		Print this help message.
-	-k --old-key		Use existing old key, rather than create new (default).
-	-o --old-config		Use existing old config, rather than create new (default).
+	-c --new-config		Create new config, not use existing/old one (default).
+	-k --new-key		Create new key, not use the existing/old one (default).
 
 ENVIRONMENT VARIABLES
 
@@ -90,8 +84,8 @@ get_opts() {
     local xvar
     for xvar in $@; do
 	case "$xvar" in
-	    ("-o"|"--old-config")	opt_old_conf='x';;
-	    ("-k"|"--old-key")		opt_old_key='x';;
+	    ("-c"|"--new-config")	opt_new_conf='x';;
+	    ("-k"|"--new-key")		opt_new_key='x';;
 	    ("-h"|'--help')		usage;;
 	    (*)
 		if [ "$HOSTNAME" = "" ]; then
@@ -116,6 +110,15 @@ CONF="$CONFDIR/csr-gen.rc"
 csr_dir="${CONFDIR}/csr"
 csr_cf="${csr_dir}/${CSRCONF}"
 if [ -r "$CONF" ]; then . "$CONF"; fi
+#
+#	Now set the defaults if anything is not configured:
+#
+C=${C:-US}
+ST=${ST:-Michigan}
+L=${L:-Ann Arbor}
+O=${O:-University of Michigan}
+OU=${OU:-HITS}
+GROUPEMAIL=${GROUPEMAIL:-"weiwang-club@umich.edu"}
 if [ "$CSR_GEN_RC" != "$CONFVER" -o "$GROUPEMAIL" = "" ]; then
     mkdir -p "$CONFDIR"
     echo "CSR_GEN_RC=${CONFVER}"'
@@ -167,9 +170,9 @@ fi
 ##	Generate a CSR configuration file.
 ##--------------------------------------------------------------------------------
 config_csr() {
-    if [ "$opt_old_config" = 'x' -o "$args" = '' ]; then
+    if [ "$opt_new_conf" = '' -o "$args" = '' ]; then
 	if [ -f "$csr_cf" ]; then
-	    echo Using existing/old CSR configuration.\n
+	    echo Using existing/old CSR configuration.
 	    return
 	fi
     fi
@@ -228,8 +231,7 @@ EOF
 config_csr $@
 if [ "$HOSTNAME" = '' ]; then no_hostname; fi
 
-echo opt_old_key = $opt_old_key
-if [ -f "$KEYFILE" -a "$opt_old_key" = 'x' ]; then
+if [ -f "$KEYFILE" -a "$opt_new_key" = '' ]; then
     echo "Using existing key file: [$KEYFILE]"
 else
     openssl genrsa -out "$KEYFILE" "$KEYSIZE"
